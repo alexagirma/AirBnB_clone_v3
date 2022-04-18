@@ -1,74 +1,74 @@
 #!/usr/bin/python3
+""" Amenities APIRest
 """
-    Module of blueprints of flask
-"""
+
 from models import storage
 from models.amenity import Amenity
-from flask import jsonify, abort, request
 from api.v1.views import app_views
+from flask import jsonify, abort, request
 
 
-@app_views.route("/amenities", methods=['GET'], strict_slashes=False)
-def fetch_all_amenities():
-    """Fetch all amenities"""
-    amenities_list = []
-    amenities = storage.all("Amenity")
-    for amenity in amenities.values():
-        amenities_list.append(amenity.to_dict())
-    return jsonify(amenities_list)
+@app_views.route('/amenities', methods=['GET'])
+def amenity_list():
+    """ list of objetc in dict form
+    """
+    lista = []
+    dic = storage.all('Amenity')
+    for elem in dic:
+        lista.append(dic[elem].to_dict())
+    return (jsonify(lista))
 
 
-@app_views.route("/amenities/<amenity_id>",
-                 methods=['GET'], strict_slashes=False)
-def fetch_amenity(amenity_id):
-    """Fetch a amenity"""
-    amenity = storage.get("Amenity", amenity_id)
-    if amenity is None:
-        abort(404)
-    return jsonify(amenity.to_dict())
+@app_views.route('/amenities/<amenity_id>', methods=['GET', 'DELETE'])
+def amenity_id(amenity_id):
+    """ realize the specific action depending on a method
+    """
+    lista = []
+    dic = storage.all('Amenity')
+    for elem in dic:
+        var = dic[elem].to_dict()
+        if var["id"] == amenity_id:
+            if request.method == 'GET':
+                return (jsonify(var))
+            elif request.method == 'DELETE':
+                aux = {}
+                dic[elem].delete()
+                storage.save()
+                return (jsonify(aux))
+    abort(404)
 
 
-@app_views.route("/amenities/<amenity_id>",
-                 methods=['DELETE'], strict_slashes=False)
-def delete_amenity(amenity_id):
-    """Delete an amenity"""
-    amenity = storage.get("Amenity", amenity_id)
-    if amenity is None:
-        abort(404)
-    amenity.delete()
-    storage.save()
-    return jsonify({}), 200
-
-
-@app_views.route("/amenities", methods=['POST'], strict_slashes=False)
-def create_amenity():
-    """Creates an amenity"""
-    post_data = request.get_json()
-    if post_data is None:
-        abort(400, 'Not a JSON')
-    if post_data.get('name') is None:
-        abort(400, 'Missing name')
-    new_amenity = Amenity(**post_data)
-    storage.new(new_amenity)
-    storage.save()
-    return jsonify(new_amenity.to_dict()), 201
-
-
-@app_views.route("/amenities/<amenity_id>",
-                 methods=['PUT'], strict_slashes=False)
-def update_amenity(amenity_id):
-    """Updates an amenity"""
-    attributes_unchanged = ['id', 'created_at', 'updated_at']
-    amenity = storage.get("Amenity", amenity_id)
-    if amenity is None:
-        abort(404)
-    put_data = request.get_json()
-    if put_data is None:
-        abort(400, 'Not a JSON')
-    for key, value in put_data.items():
-        if key in attributes_unchanged:
-            pass
+@app_views.route('/amenities', methods=['POST'])
+def amenity_item():
+    """ add a new item
+    """
+    if not request.json:
+        return jsonify("Not a JSON"), 400
+    else:
+        content = request.get_json()
+        if "name" not in content.keys():
+            return jsonify("Missing name"), 400
         else:
-            setattr(amenity, key, value)
-    amenity.save()
-    return jsonify(amenity.to_dict()), 200
+            new_amenity = Amenity(**content)
+            new_amenity.save()
+            return (jsonify(new_amenity.to_dict()), 201)
+
+
+@app_views.route('/amenities/<amenity_id>', methods=['PUT'])
+def update_amenity(amenity_id):
+    """ update item
+    """
+    dic = storage.all("Amenity")
+    for key in dic:
+        if dic[key].id == amenity_id:
+            if not request.json:
+                return jsonify("Not a JSON"), 400
+            else:
+                forbidden = ["id", "update_at", "created_at"]
+                content = request.get_json()
+                for k in content:
+                    if k not in forbidden:
+                        setattr(dic[key], k, content[k])
+                dic[key].save()
+                return(jsonify(dic[key].to_dict()))
+    abort(404)
