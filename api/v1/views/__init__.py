@@ -1,7 +1,12 @@
 #!/usr/bin/python3
+<<<<<<< HEAD
 """
  Start Flask Application
 """
+=======
+""" Blueprint for API """
+
+>>>>>>> 4de5605493e57ffef8fbb788b7a3b69a6cb867d3
 from flask import Blueprint
 
 app_views = Blueprint('app_views',  __name__, url_prefix='/api/v1')
